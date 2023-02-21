@@ -1,0 +1,16 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VillaAPI", "VillaAPI\VillaAPI.csproj", "{98EA5D92-704A-4054-BB9D-10B6F71D2BEF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{98EA5D92-704A-4054-BB9D-10B6F71D2BEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{98EA5D92-704A-4054-BB9D-10B6F71D2BEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{98EA5D92-704A-4054-BB9D-10B6F71D2BEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{98EA5D92-704A-4054-BB9D-10B6F71D2BEF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
