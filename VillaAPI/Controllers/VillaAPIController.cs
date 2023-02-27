@@ -4,8 +4,9 @@ using VillaAPI.Models.DTO;
 
 namespace VillaAPI.Controllers;
 
+//[Route("api/[controller]")]
 [Route("api/villaAPI")]
-[ApiController]
+[ApiController] //built in support for data annotations
 public class VillaAPIController : ControllerBase
 {
     [HttpGet]
@@ -14,7 +15,7 @@ public class VillaAPIController : ControllerBase
         return Ok(VillaStore.villaList);
     }
 
-    [HttpGet("id:int")]
+    [HttpGet("id:int", Name = "GetVillaById")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -27,14 +28,36 @@ public class VillaAPIController : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public ActionResult<VillaDTO> CreateVilla([FromBody] VillaDTO villaDTO)
     {
+        // data annotation
+        // if (!ModelState.IsValid)
+        // {
+        //     return BadRequest(ModelState);
+        // }
+        if (VillaStore.villaList.FirstOrDefault(u => u.Name.ToLower() == villaDTO.Name.ToLower()) != null)
+        {
+            ModelState.AddModelError(nameof(villaDTO.Name), "Villa name already exists");
+            {
+                return BadRequest(ModelState);
+            }
+
+        }
         if (villaDTO == null) return BadRequest(villaDTO);
         if (villaDTO.Id > 0) return StatusCode(StatusCodes.Status500InternalServerError);
+        // {
+        //
+        //     Response.StatusCode = StatusCodes.Status500InternalServerError;
+        //     return new JsonResult("Bad request bro");
+        // }
 
         villaDTO.Id = VillaStore.villaList.OrderByDescending(u => u.Id).FirstOrDefault().Id + 1;
         VillaStore.villaList.Add(villaDTO);
 
-        return Ok(villaDTO);
+        return CreatedAtRoute("GetVillaById", new { id = villaDTO.Id }, villaDTO);
     }
 }
