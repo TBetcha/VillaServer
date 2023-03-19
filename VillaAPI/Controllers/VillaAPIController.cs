@@ -10,9 +10,20 @@ namespace VillaAPI.Controllers;
 [ApiController] //built in support for data annotations
 public class VillaAPIController : ControllerBase
 {
+    //////// not using serilog
+    // private readonly ILogger<VillaAPIController> _logger;
+
+    // public VillaAPIController(ILogger<VillaAPIController> logger)
+    // {
+    //     _logger = logger;
+    // }
+    /// ////////////
+
+
     [HttpGet]
     public ActionResult<IEnumerable<VillaDTO>> GetVillas()
     {
+        _logger.LogInformation("Getting All villas");
         return Ok(VillaStore.villaList);
     }
 
@@ -22,7 +33,12 @@ public class VillaAPIController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public ActionResult<VillaDTO> GetVilla(int id)
     {
-        if (id == 0) return BadRequest();
+        if (id == 0)
+        {
+            _logger.LogError("Get Villa error with id {id}", id);
+            return BadRequest();
+        }
+
         var villa = VillaStore.villaList.FirstOrDefault(u => u.Id == id);
         if (villa == null) return NotFound();
         return Ok(villa);
@@ -40,16 +56,19 @@ public class VillaAPIController : ControllerBase
         // {
         //     return BadRequest(ModelState);
         // }
-        if (VillaStore.villaList.FirstOrDefault(u => u.Name.ToLower() == villaDTO.Name.ToLower()) != null)
+        if (VillaStore.villaList.FirstOrDefault(u =>
+                u.Name.ToLower() == villaDTO.Name.ToLower()) != null)
         {
-            ModelState.AddModelError(nameof(villaDTO.Name), "Villa name already exists");
+            ModelState.AddModelError(nameof(villaDTO.Name),
+                "Villa name already exists");
             {
                 return BadRequest(ModelState);
             }
         }
 
         if (villaDTO == null) return BadRequest(villaDTO);
-        if (villaDTO.Id > 0) return StatusCode(StatusCodes.Status500InternalServerError);
+        if (villaDTO.Id > 0)
+            return StatusCode(StatusCodes.Status500InternalServerError);
         // {
         //
         //     Response.StatusCode = StatusCodes.Status500InternalServerError;
@@ -60,7 +79,8 @@ public class VillaAPIController : ControllerBase
         VillaStore.villaList.Add(villaDTO);
 
         // for created at route I need to reference name, meaning it has to be in controller
-        return CreatedAtRoute("GetVillaById", new { id = villaDTO.Id }, villaDTO);
+        return CreatedAtRoute("GetVillaById", new { id = villaDTO.Id },
+            villaDTO);
     }
 
     [HttpDelete("{id:int}", Name = "DeleteVilla")]
