@@ -1,11 +1,17 @@
+using Microsoft.EntityFrameworkCore;
 using Serilog;
-using Serilog.Events;
-using VillaAPI.Logging;
+using VillaAPI.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+Log.Logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Console().CreateLogger();
 
+builder.Host.UseSerilog();
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+{
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultSQLConnection"));
+});
 builder.Services
     .AddControllers(option =>
     {
@@ -16,7 +22,6 @@ builder.Services
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
-builder.Services.AddSingleton<ILogging,Logging>();
 builder.Logging.AddConsole();
 
 var app = builder.Build();

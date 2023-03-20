@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using VillaAPI.Data;
-using VillaAPI.Logging;
 using VillaAPI.Models.DTO;
 
 namespace VillaAPI.Controllers;
@@ -11,9 +10,9 @@ namespace VillaAPI.Controllers;
 [ApiController] //built in support for data annotations
 public class VillaAPIController : ControllerBase
 {
-    private readonly ILogging _logger;
+    private readonly ILogger _logger;
 
-    public VillaAPIController(ILogging logger)
+    public VillaAPIController(ILogger<VillaAPIController> logger)
     {
         _logger = logger;
     }
@@ -21,7 +20,7 @@ public class VillaAPIController : ControllerBase
     [HttpGet]
     public ActionResult<IEnumerable<VillaDTO>> GetVillas()
     {
-        _logger.Log("Getting All villas", "");
+        _logger.LogInformation("Getting All villas");
         return Ok(VillaStore.villaList);
     }
 
@@ -33,7 +32,7 @@ public class VillaAPIController : ControllerBase
     {
         if (id == 0)
         {
-            _logger.Log($"Get Villa error with id {id}", "Error");
+            _logger.LogError($"Get Villa error with id {id}");
             return BadRequest();
         }
 
