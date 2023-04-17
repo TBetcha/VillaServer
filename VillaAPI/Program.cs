@@ -10,12 +10,13 @@ Log.Logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Console().Cr
 builder.Host.UseSerilog();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultSQLConnection"));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
 });
 builder.Services
     .AddControllers(option =>
     {
-        // option.ReturnHttpNotAcceptable = true;
+        //* only return if format includes "json"
+        option.ReturnHttpNotAcceptable = true;
     })
     .AddNewtonsoftJson()
     .AddXmlDataContractSerializerFormatters(); //add xml formatter
