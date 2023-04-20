@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
 using VillaAPI.Data;
+using VillaAPI.Models;
 using VillaAPI.Models.DTO;
 
 namespace VillaAPI.Controllers;
@@ -10,18 +11,21 @@ namespace VillaAPI.Controllers;
 [ApiController] //built in support for data annotations
 public class VillaAPIController : ControllerBase
 {
+    private readonly ApplicationDbContext _db;
     private readonly ILogger _logger;
 
-    public VillaAPIController(ILogger<VillaAPIController> logger)
+
+    public VillaAPIController(ILogger<VillaAPIController> logger, ApplicationDbContext db)
     {
         _logger = logger;
+        _db = db;
     }
 
     [HttpGet]
     public ActionResult<IEnumerable<VillaDTO>> GetVillas()
     {
         _logger.LogInformation("Getting All villas");
-        return Ok(VillaStore.villaList);
+        return Ok(_db.Villas.ToList());
     }
 
     [HttpGet("{id:int}", Name = "GetVillaById")]
@@ -36,7 +40,7 @@ public class VillaAPIController : ControllerBase
             return BadRequest();
         }
 
-        var villa = VillaStore.villaList.FirstOrDefault(u => u.Id == id);
+        var villa = _db.Villas.FirstOrDefault(u => u.Id == id);
         if (villa == null) return NotFound();
         return Ok(villa);
     }
@@ -53,7 +57,7 @@ public class VillaAPIController : ControllerBase
         // {
         //     return BadRequest(ModelState);
         // }
-        if (VillaStore.villaList.FirstOrDefault(u =>
+        if (_db.Villas.FirstOrDefault(u =>
                 u.Name.ToLower() == villaDTO.Name.ToLower()) != null)
         {
             ModelState.AddModelError(nameof(villaDTO.Name),
@@ -71,9 +75,19 @@ public class VillaAPIController : ControllerBase
         //     Response.StatusCode = StatusCodes.Status500InternalServerError;
         //     return new JsonResult("Bad request bro");
         // }
-
-        villaDTO.Id = VillaStore.villaList.OrderByDescending(u => u.Id).FirstOrDefault().Id + 1;
-        VillaStore.villaList.Add(villaDTO);
+        Villa model = new()
+        {
+            Amenity = villaDTO.Amenity,
+            Details = villaDTO.Details,
+            Id = villaDTO.Id,
+            ImageUrl = villaDTO.ImageUrl,
+            Name = villaDTO.Name,
+            Occupancy = villaDTO.Occupancy,
+            Rate = villaDTO.Rate,
+            Sqft = villaDTO.Sqft
+        };
+        _db.Villas.Add(model);
+        _db.SaveChanges();
 
         // for created at route I need to reference name, meaning it has to be in controller
         return CreatedAtRoute("GetVillaById", new { id = villaDTO.Id },
@@ -87,9 +101,10 @@ public class VillaAPIController : ControllerBase
     public IActionResult DeleteVilla(int id)
     {
         if (id == 0) return BadRequest();
-        var villa = VillaStore.villaList.FirstOrDefault(u => u.Id == id);
+        var villa = _db.Villas.FirstOrDefault(u => u.Id == id);
         if (villa == null) return NotFound();
-        VillaStore.villaList.Remove(villa);
+        _db.Villas.Remove(villa);
+        _db.SaveChanges();
         return NoContent();
     }
 
@@ -99,14 +114,22 @@ public class VillaAPIController : ControllerBase
     public IActionResult UpdateVilla(int id, [FromBody] VillaDTO villaDTO)
     {
         if (villaDTO == null || id != villaDTO.Id) return BadRequest(villaDTO);
-        var villa = VillaStore.villaList.FirstOrDefault(u => u.Id == id);
-        if (villa == null) return NotFound();
-        villa.Name = villaDTO.Name;
-        villa.SqFt = villaDTO.SqFt;
-        villa.Name = villaDTO.Name;
+
+
+        Villa model = new()
+        {
+            Amenity = villaDTO.Amenity,
+            Details = villaDTO.Details,
+            Id = villaDTO.Id,
+            ImageUrl = villaDTO.ImageUrl,
+            Name = villaDTO.Name,
+            Occupancy = villaDTO.Occupancy,
+            Rate = villaDTO.Rate,
+            Sqft = villaDTO.Sqft
+        };
+        _db.Villas.Update(model);
         return NoContent();
     }
-
     [HttpPatch("{id:int}", Name = "UpdatePartialVilla")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -114,12 +137,35 @@ public class VillaAPIController : ControllerBase
     {
         if (patchDTO == null || id == 0) return BadRequest();
 
-        var villa = VillaStore.villaList.FirstOrDefault(u => u.Id == id);
+        var villa = _db.Villas.FirstOrDefault(u => u.Id == id);
+        VillaDTO villaDTO = new()
+        {
+            Amenity = villa.Amenity,
+            Details = villa.Details,
+            Id = villa.Id,
+            ImageUrl = villa.ImageUrl,
+            Name = villa.Name,
+            Occupancy = villa.Occupancy,
+            Rate = villa.Rate,
+            Sqft = villa.Sqft
+        };
         if (villa == null) return BadRequest();
 
-        patchDTO.ApplyTo(villa, ModelState);
-        if (!ModelState.IsValid) return BadRequest(ModelState);
-
+        patchDTO.ApplyTo(villaDTO, ModelState);
+        var model = new Villa
+        {
+            Amenity = villaDTO.Amenity,
+            Details = villaDTO.Details,
+            Id = villaDTO.Id,
+            ImageUrl = villaDTO.ImageUrl,
+            Name = villaDTO.Name,
+            Occupancy = villaDTO.Occupancy,
+            Rate = villaDTO.Rate,
+            Sqft = villaDTO.Sqft
+        };
+        // if (!ModelState.IsValid) return BadRequest(ModelState);
+        _db.Villas.Update(model);
+        _db.SaveChanges();
         return NoContent();
     }
 }
