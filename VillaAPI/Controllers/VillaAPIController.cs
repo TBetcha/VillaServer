@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using VillaAPI.Data;
 using VillaAPI.Models;
 using VillaAPI.Models.DTO;
@@ -22,7 +23,7 @@ public class VillaAPIController : ControllerBase
     }
 
     [HttpGet]
-    public ActionResult<IEnumerable<VillaDTO>> GetVillas()
+    public ActionResult<IEnumerable<VillaDto>> GetVillas()
     {
         _logger.LogInformation("Getting All villas");
         return Ok(_db.Villas.ToList());
@@ -32,7 +33,7 @@ public class VillaAPIController : ControllerBase
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public ActionResult<VillaDTO> GetVilla(int id)
+    public ActionResult<VillaDto> GetVilla(int id)
     {
         if (id == 0)
         {
@@ -50,26 +51,27 @@ public class VillaAPIController : ControllerBase
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public ActionResult<VillaDTO> CreateVilla([FromBody] VillaDTO villaDTO)
+    public ActionResult<VillaDto> CreateVilla([FromBody] VillaCreateDto villaDto)
     {
-        // data annotation
+        //* data annotation - this happen automatically if api controller is used
         // if (!ModelState.IsValid)
         // {
         //     return BadRequest(ModelState);
         // }
         if (_db.Villas.FirstOrDefault(u =>
-                u.Name.ToLower() == villaDTO.Name.ToLower()) != null)
+                u.Name.ToLower() == villaDto.Name.ToLower()) != null)
         {
-            ModelState.AddModelError(nameof(villaDTO.Name),
+            ModelState.AddModelError(nameof(villaDto.Name),
                 "Villa name already exists");
             {
                 return BadRequest(ModelState);
             }
         }
 
-        if (villaDTO == null) return BadRequest(villaDTO);
-        if (villaDTO.Id > 0)
-            return StatusCode(StatusCodes.Status500InternalServerError);
+        if (villaDto == null) return BadRequest(villaDto);
+        //* Removed this when villcreatedto was usec
+        // if (villaDto.Id > 0)
+        //     return StatusCode(StatusCodes.Status500InternalServerError);
         // {
         //
         //     Response.StatusCode = StatusCodes.Status500InternalServerError;
@@ -77,21 +79,20 @@ public class VillaAPIController : ControllerBase
         // }
         Villa model = new()
         {
-            Amenity = villaDTO.Amenity,
-            Details = villaDTO.Details,
-            Id = villaDTO.Id,
-            ImageUrl = villaDTO.ImageUrl,
-            Name = villaDTO.Name,
-            Occupancy = villaDTO.Occupancy,
-            Rate = villaDTO.Rate,
-            Sqft = villaDTO.Sqft
+            Amenity = villaDto.Amenity,
+            Details = villaDto.Details,
+            ImageUrl = villaDto.ImageUrl,
+            Name = villaDto.Name,
+            Occupancy = villaDto.Occupancy,
+            Rate = villaDto.Rate,
+            Sqft = villaDto.Sqft,
+            CreatedDate =   DateTime.UtcNow
         };
         _db.Villas.Add(model);
         _db.SaveChanges();
 
         // for created at route I need to reference name, meaning it has to be in controller
-        return CreatedAtRoute("GetVillaById", new { id = villaDTO.Id },
-            villaDTO);
+        return CreatedAtRoute("GetVillaById", new { id = model.Id }, model);
     }
 
     [HttpDelete("{id:int}", Name = "DeleteVilla")]
@@ -111,34 +112,37 @@ public class VillaAPIController : ControllerBase
     [HttpPut("{id:int}", Name = "UpdateVilla")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public IActionResult UpdateVilla(int id, [FromBody] VillaDTO villaDTO)
+    public IActionResult UpdateVilla(int id, [FromBody] VillaUpdateDto villaDto)
     {
-        if (villaDTO == null || id != villaDTO.Id) return BadRequest(villaDTO);
+        if (villaDto == null || id != villaDto.Id) return BadRequest(villaDto);
 
 
         Villa model = new()
         {
-            Amenity = villaDTO.Amenity,
-            Details = villaDTO.Details,
-            Id = villaDTO.Id,
-            ImageUrl = villaDTO.ImageUrl,
-            Name = villaDTO.Name,
-            Occupancy = villaDTO.Occupancy,
-            Rate = villaDTO.Rate,
-            Sqft = villaDTO.Sqft
+            Amenity = villaDto.Amenity,
+            Details = villaDto.Details,
+            Id = villaDto.Id,
+            ImageUrl = villaDto.ImageUrl,
+            Name = villaDto.Name,
+            Occupancy = villaDto.Occupancy,
+            Rate = villaDto.Rate,
+            Sqft = villaDto.Sqft,
+            UpdatedDate =   DateTime.UtcNow
         };
         _db.Villas.Update(model);
+        _db.SaveChanges();
         return NoContent();
     }
+
     [HttpPatch("{id:int}", Name = "UpdatePartialVilla")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public IActionResult UpdatePartialVilla(int id, JsonPatchDocument<VillaDTO> patchDTO)
+    public IActionResult UpdatePartialVilla(int id, JsonPatchDocument<VillaUpdateDto> patchDto)
     {
-        if (patchDTO == null || id == 0) return BadRequest();
+        if (patchDto == null || id == 0) return BadRequest();
 
-        var villa = _db.Villas.FirstOrDefault(u => u.Id == id);
-        VillaDTO villaDTO = new()
+        var villa = _db.Villas.AsNoTracking().FirstOrDefault(u => u.Id == id);
+        VillaUpdateDto villaDto = new()
         {
             Amenity = villa.Amenity,
             Details = villa.Details,
@@ -147,25 +151,29 @@ public class VillaAPIController : ControllerBase
             Name = villa.Name,
             Occupancy = villa.Occupancy,
             Rate = villa.Rate,
-            Sqft = villa.Sqft
+            Sqft = villa.Sqft,
         };
         if (villa == null) return BadRequest();
 
-        patchDTO.ApplyTo(villaDTO, ModelState);
+        patchDto.ApplyTo(villaDto, ModelState);
         var model = new Villa
         {
-            Amenity = villaDTO.Amenity,
-            Details = villaDTO.Details,
-            Id = villaDTO.Id,
-            ImageUrl = villaDTO.ImageUrl,
-            Name = villaDTO.Name,
-            Occupancy = villaDTO.Occupancy,
-            Rate = villaDTO.Rate,
-            Sqft = villaDTO.Sqft
+            Amenity = villaDto.Amenity,
+            Details = villaDto.Details,
+            Id = villaDto.Id,
+            ImageUrl = villaDto.ImageUrl,
+            Name = villaDto.Name,
+            Occupancy = villaDto.Occupancy,
+            Rate = villaDto.Rate,
+            Sqft = villaDto.Sqft,
+            CreatedDate =   villa.CreatedDate,
+            UpdatedDate =   DateTime.UtcNow
         };
-        // if (!ModelState.IsValid) return BadRequest(ModelState);
         _db.Villas.Update(model);
         _db.SaveChanges();
+
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+
         return NoContent();
     }
 }

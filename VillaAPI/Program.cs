@@ -5,7 +5,7 @@ using VillaAPI.Data;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-Log.Logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Console().CreateLogger();
+Log.Logger = new LoggerConfiguration().MinimumLevel.Information().WriteTo.Console().CreateLogger();
 
 builder.Host.UseSerilog();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -16,7 +16,7 @@ builder.Services
     .AddControllers(option =>
     {
         //* only return if format includes "json"
-        option.ReturnHttpNotAcceptable = true;
+        // option.ReturnHttpNotAcceptable = true;
     })
     .AddNewtonsoftJson()
     .AddXmlDataContractSerializerFormatters(); //add xml formatter
