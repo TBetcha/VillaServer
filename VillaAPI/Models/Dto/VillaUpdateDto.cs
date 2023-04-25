@@ -26,4 +26,9 @@ public class VillaUpdateDto
 
     [Required]
     public int Sqft { get; set; }
+
+    public DateTime UpdatedDate { get; set; } = DateTime.UtcNow;
+
+    public DateTime CreatedDate { get; set; }
+
 }
