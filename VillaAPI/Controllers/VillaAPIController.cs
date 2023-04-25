@@ -102,7 +102,6 @@ public class VillaApiController : ControllerBase
         var villa = await _db.Villas.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id);
         updateDto.CreatedDate = villa.CreatedDate;
 
-
         Villa model = _mapper.Map<Villa>(updateDto);
         _db.Villas.Update(model);
         await _db.SaveChangesAsync();
@@ -117,19 +116,16 @@ public class VillaApiController : ControllerBase
         if (patchDto == null || id == 0) return BadRequest();
 
         var villa = await _db.Villas.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id);
-
         VillaUpdateDto villaDto = _mapper.Map<VillaUpdateDto>(villa);
 
         if (villa == null) return BadRequest();
 
         patchDto.ApplyTo(villaDto, ModelState);
-
         Villa model = _mapper.Map<Villa>(villaDto);
         _db.Villas.Update(model);
         await _db.SaveChangesAsync();
 
         if (!ModelState.IsValid) return BadRequest(ModelState);
-
         return NoContent();
     }
 }
