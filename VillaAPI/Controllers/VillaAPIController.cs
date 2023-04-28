@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using VillaAPI.Data;
 using VillaAPI.Models;
 using VillaAPI.Models.DTO;
+using VillaAPI.Repository.IRepository;
 
 namespace VillaAPI.Controllers;
 
@@ -13,23 +14,23 @@ namespace VillaAPI.Controllers;
 [ApiController] //built in support for data annotations
 public class VillaApiController : ControllerBase
 {
-    private readonly ApplicationDbContext _db;
-    private readonly IMapper _mapper;
-    private readonly ILogger _logger;
+    private readonly IVillaRepository _dbVilla;
+    private readonly IMapper          _mapper;
+    private readonly ILogger          _logger;
 
 
-    public VillaApiController(ILogger<VillaApiController> logger, ApplicationDbContext db, IMapper mapper)
+    public VillaApiController(ILogger<VillaApiController> logger, IVillaRepository dbVilla, IMapper mapper)
     {
-        _logger = logger;
-        _db = db;
-        _mapper = mapper;
+        _logger  = logger;
+        _dbVilla = dbVilla;
+        _mapper  = mapper;
     }
 
     [HttpGet]
     public async Task<ActionResult<IEnumerable<VillaDto>>> GetVillas()
     {
         _logger.LogInformation("Getting All villas");
-        IEnumerable<Villa> villaList = await _db.Villas.ToListAsync();
+        IEnumerable<Villa> villaList = await _dbVilla.GetAllAsync();
         return Ok(_mapper.Map<List<VillaDto>>(villaList));
     }
 
@@ -45,7 +46,7 @@ public class VillaApiController : ControllerBase
             return BadRequest();
         }
 
-        var villa = await _db.Villas.FirstOrDefaultAsync(u => u.Id == id);
+        var villa = await _dbVilla.GetAsync(u => u.Id == id, true);
         if (villa == null) return NotFound();
         return Ok(_mapper.Map<VillaDto>(villa));
     }
@@ -57,8 +58,7 @@ public class VillaApiController : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<VillaDto>> CreateVilla([FromBody] VillaCreateDto createDto)
     {
-        if (await _db.Villas.FirstOrDefaultAsync(u =>
-                u.Name.ToLower() == createDto.Name.ToLower()) != null)
+        if (await _dbVilla.GetAsync(u => u.Name.ToLower() == createDto.Name.ToLower()) != null)
         {
             ModelState.AddModelError(nameof(createDto.Name),
                 "Villa name already exists");
@@ -71,8 +71,7 @@ public class VillaApiController : ControllerBase
 
         Villa model = _mapper.Map<Villa>(createDto);
 
-        await _db.Villas.AddAsync(model);
-        await _db.SaveChangesAsync();
+        await _dbVilla.CreateAsync(model);
 
         // for created at route I need to reference name, meaning it has to be in controller
         return CreatedAtRoute("GetVillaById", new { id = model.Id }, model);
@@ -85,10 +84,9 @@ public class VillaApiController : ControllerBase
     public async Task<IActionResult> DeleteVilla(int id)
     {
         if (id == 0) return BadRequest();
-        var villa = await _db.Villas.FirstOrDefaultAsync(u => u.Id == id);
+        var villa = await _dbVilla.GetAsync(u => u.Id == id);
         if (villa == null) return NotFound();
-        _db.Villas.Remove(villa);
-        await _db.SaveChangesAsync();
+        await _dbVilla.RemoveAsync(villa);
         return NoContent();
     }
 
@@ -99,12 +97,11 @@ public class VillaApiController : ControllerBase
     {
         if (updateDto == null || id != updateDto.Id) return BadRequest(updateDto);
 
-        var villa = await _db.Villas.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id);
+        var villa = await _dbVilla.GetAsync(u => u.Id == id, false);
         updateDto.CreatedDate = villa.CreatedDate;
 
         Villa model = _mapper.Map<Villa>(updateDto);
-        _db.Villas.Update(model);
-        await _db.SaveChangesAsync();
+        await _dbVilla.UpdateAsync(model);
         return NoContent();
     }
 
@@ -115,15 +112,14 @@ public class VillaApiController : ControllerBase
     {
         if (patchDto == null || id == 0) return BadRequest();
 
-        var villa = await _db.Villas.AsNoTracking().FirstOrDefaultAsync(u => u.Id == id);
+        var villa = await _dbVilla.GetAsync(u => u.Id == id, false);
         VillaUpdateDto villaDto = _mapper.Map<VillaUpdateDto>(villa);
 
         if (villa == null) return BadRequest();
 
         patchDto.ApplyTo(villaDto, ModelState);
         Villa model = _mapper.Map<Villa>(villaDto);
-        _db.Villas.Update(model);
-        await _db.SaveChangesAsync();
+        await _dbVilla.UpdateAsync(model);
 
         if (!ModelState.IsValid) return BadRequest(ModelState);
         return NoContent();
