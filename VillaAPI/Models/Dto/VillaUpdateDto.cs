@@ -30,5 +30,4 @@ public class VillaUpdateDto
     public DateTime UpdatedDate { get; set; } = DateTime.UtcNow;
 
     public DateTime CreatedDate { get; set; }
-
 }

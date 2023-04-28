@@ -9,8 +9,6 @@ using VillaAPI.Repository.IRepository;
 
 namespace VillaAPI.Controllers;
 
-//[Route("api/[controller]")]
-[Route("api/villaAPI")]
 [ApiController] //built in support for data annotations
 public class VillaApiController : ControllerBase
 {
@@ -93,6 +91,7 @@ public class VillaApiController : ControllerBase
     [HttpPut("{id:int}", Name = "UpdateVilla")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    //TODO: Fix update time so that it gets updated on every update not just the first one
     public async Task<IActionResult> UpdateVilla(int id, [FromBody] VillaUpdateDto updateDto)
     {
         if (updateDto == null || id != updateDto.Id) return BadRequest(updateDto);
