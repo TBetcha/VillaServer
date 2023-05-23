@@ -9,6 +9,7 @@ using VillaAPI.Repository.IRepository;
 
 namespace VillaAPI.Controllers;
 
+[Route("api/villaAPI")]
 [ApiController] //built in support for data annotations
 public class VillaApiController : ControllerBase
 {
